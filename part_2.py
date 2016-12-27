@@ -75,7 +75,7 @@ def estimate_next_pos(measurement, OTHER = None):
             x = OTHER['x']
             P = OTHER['P'] 
 
-        if m_heading < (x.value[0][0] - pi): # off by a rotation
+        while m_heading < (x.value[0][0] - pi): # off by a rotation
             m_heading += 2*pi
 
         Z = matrix([[m_heading, m_distance]])

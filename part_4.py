@@ -1,42 +1,25 @@
 # ----------
-# Part Three
+# Part Four
 #
-# Now you'll actually track down and recover the runaway Traxbot. 
-# In this step, your speed will be about twice as fast the runaway bot,
-# which means that your bot's distance parameter will be about twice that
-# of the runaway. You can move less than this parameter if you'd 
-# like to slow down your bot near the end of the chase. 
+# Again, you'll track down and recover the runaway Traxbot. 
+# But this time, your speed will be about the same as the runaway bot. 
+# This may require more careful planning than you used last time.
 #
 # ----------
 # YOUR JOB
 #
-# Complete the next_move function. This function will give you access to 
-# the position and heading of your bot (the hunter); the most recent 
-# measurement received from the runaway bot (the target), the max distance
-# your bot can move in a given timestep, and another variable, called 
-# OTHER, which you can use to keep track of information.
-# 
-# Your function will return the amount you want your bot to turn, the 
-# distance you want your bot to move, and the OTHER variable, with any
-# information you want to keep track of.
-# 
+# Complete the next_move function, similar to how you did last time. 
+#
 # ----------
 # GRADING
 # 
-# We will make repeated calls to your next_move function. After
-# each call, we will move the hunter bot according to your instructions
-# and compare its position to the target bot's true position
-# As soon as the hunter is within 0.01 stepsizes of the target,
-# you will be marked correct and we will tell you how many steps it took
-# before your function successfully located the target bot. 
-#
-# As an added challenge, try to get to the target bot as quickly as 
-# possible. 
+# Same as part 3. Again, try to catch the target in as few steps as possible.
 
 from robot import *
 from math import *
 from matrix import *
 import random
+import time
 
 def convert_measurement_into_polar_coordinates(measurement, prev_point):
     dx = measurement[0] - prev_point[0]
@@ -62,6 +45,8 @@ def kalman_prediction(x, P, Z):
 def estimate_target_position(measurement, OTHER= None):
     if OTHER != None:
         m_heading, m_distance = convert_measurement_into_polar_coordinates(measurement, OTHER['prev'])
+        print "*****************"
+        print "m_heading orig: ", m_heading
 
         if 'x' not in OTHER.keys():
             x = matrix([[m_heading], [m_distance], [0.], [0.]]) # initial state (location and velocity)
@@ -72,12 +57,17 @@ def estimate_target_position(measurement, OTHER= None):
 
         while m_heading < (x.value[0][0] - pi): # off by a rotation
             m_heading += 2*pi
+
+        print "m_heading after: ", m_heading
     
         Z = matrix([[m_heading, m_distance]])
         x, P = kalman_prediction(x, P, Z)
         
         heading = x.value[0][0]
         distance = x.value[1][0]
+        print "heading: ", heading
+        print "distance: ", distance
+
 
         new_x = distance * cos(heading)
         new_y = distance * sin(heading)
@@ -124,7 +114,7 @@ def demo_grading(hunter_bot, target_bot, next_move_fcn, OTHER = None):
     """Returns True if your next_move_fcn successfully guides the hunter_bot
     to the target_bot. This function is here to help you understand how we 
     will grade your submission."""
-    max_distance = 1.94 * target_bot.distance # 1.94 is an example. It will change.
+    max_distance = 0.98 * target_bot.distance # 0.98 is an example. It will change.
     separation_tolerance = 0.02 * target_bot.distance # hunter must be within 0.02 step size to catch target
     caught = False
     ctr = 0
@@ -142,7 +132,7 @@ def demo_grading(hunter_bot, target_bot, next_move_fcn, OTHER = None):
     broken_robot.color('green')
     broken_robot.resizemode('user')
     broken_robot.shapesize(0.3, 0.3, 0.3)
-    size_multiplier = 15.0 #change Size of animation
+    size_multiplier = 15.0 #change size of animation
     chaser_robot.hideturtle()
     chaser_robot.penup()
     chaser_robot.goto(hunter_bot.x*size_multiplier, hunter_bot.y*size_multiplier-100)
@@ -162,6 +152,9 @@ def demo_grading(hunter_bot, target_bot, next_move_fcn, OTHER = None):
     #End of Visualization
     # We will use your next_move_fcn until we catch the target or time expires.
     while not caught and ctr < 1000:
+
+        if ctr > 60:
+            time.sleep(5)
         # Check to see if the hunter has caught the target.
         hunter_position = (hunter_bot.x, hunter_bot.y)
         target_position = (target_bot.x, target_bot.y)
@@ -198,6 +191,8 @@ def demo_grading(hunter_bot, target_bot, next_move_fcn, OTHER = None):
         if ctr >= 1000:
             print "It took too many steps to catch the target."
     return caught
+
+
 
 def angle_trunc(a):
     """This maps all angles to a domain of [-pi, pi]"""
@@ -243,12 +238,18 @@ hunter = robot(-10.0, -10.0, 0.0)
 
 dt = .1
 
-P =  matrix([[0,0,0,0],[0,0,0,0],[0,0,1000,0],[0,0,0,1000]])# initial uncertainty: 0 for heading, distance, 1000 for the d(heading)/dt and d(distance)/dt
+P =  matrix([[0,0,0,0],[0,0,0,0],[0,0,1000,0],[0,0,0,1000]])# initial uncertainty: 0 for positions x and y, 1000 for the two velocities
 F =  matrix([[1,0,dt,0],[0,1,0,dt],[0,0,1,0],[0,0,0,1]])# next state function: generalize the 2d version to 4d
-H =  matrix([[1,0,0,0],[0,1,0,0]])# measurement function: reflect the fact that we observe heading and distance but not derivatives
-R =  matrix([[measurement_noise, 0],[0, measurement_noise]])# measurement uncertainty: use 2x2 matrix with measurement_noise as main diagonal
+H =  matrix([[1,0,0,0],[0,1,0,0]])# measurement function: reflect the fact that we observe x and y but not the two velocities
+R =  matrix([[measurement_noise, 0],[0, measurement_noise]])# measurement uncertainty: use 2x2 matrix with 0.1 as main diagonal
 I =  matrix([[1,0,0,0],[0,1,0,0],[0,0,1,0],[0,0,0,1]])# 4d identity matrix
 
 u = matrix([[0.], [0.], [0.], [0.]]) # external motion
 
+
 print demo_grading(hunter, target, next_move)
+
+
+
+
+
