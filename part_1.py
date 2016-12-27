@@ -204,10 +204,10 @@ test_target.set_noise(0.0, 0.0, 0.0)
 
 dt = .1
 
-P =  matrix([[0,0,0,0],[0,0,0,0],[0,0,1000,0],[0,0,0,1000]])# initial uncertainty: 0 for positions x and y, 1000 for the two velocities
+P =  matrix([[0,0,0,0],[0,0,0,0],[0,0,1000,0],[0,0,0,1000]])# initial uncertainty: 0 for heading, distance, 1000 for the d(heading)/dt and d(distance)/dt
 F =  matrix([[1,0,dt,0],[0,1,0,dt],[0,0,1,0],[0,0,0,1]])# next state function: generalize the 2d version to 4d
-H =  matrix([[1,0,0,0],[0,1,0,0]])# measurement function: reflect the fact that we observe x and y but not the two velocities
-R =  matrix([[0.00001, 0],[0, 0.00001]])# measurement uncertainty: use 2x2 matrix with 0.1 as main diagonal
+H =  matrix([[1,0,0,0],[0,1,0,0]])# measurement function: reflect the fact that we observe heading and distance but not derivatives
+R =  matrix([[0.00001, 0],[0, 0.00001]])# measurement uncertainty: use 2x2 matrix with measurement_noise as main diagonal
 I =  matrix([[1,0,0,0],[0,1,0,0],[0,0,1,0],[0,0,0,1]])# 4d identity matrix
 
 u = matrix([[0.], [0.], [0.], [0.]]) # external motion
