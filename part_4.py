@@ -20,6 +20,7 @@ from math import *
 from matrix import *
 import random
 import time
+import copy
 
 def convert_measurement_into_polar_coordinates(measurement, prev_point):
     dx = measurement[0] - prev_point[0]
@@ -45,8 +46,6 @@ def kalman_prediction(x, P, Z):
 def estimate_target_position(measurement, OTHER= None):
     if OTHER != None:
         m_heading, m_distance = convert_measurement_into_polar_coordinates(measurement, OTHER['prev'])
-        print "*****************"
-        print "m_heading orig: ", m_heading
 
         if 'x' not in OTHER.keys():
             x = matrix([[m_heading], [m_distance], [0.], [0.]]) # initial state (location and velocity)
@@ -57,22 +56,17 @@ def estimate_target_position(measurement, OTHER= None):
 
         while m_heading < (x.value[0][0] - pi): # off by a rotation
             m_heading += 2*pi
-
-        print "m_heading after: ", m_heading
     
         Z = matrix([[m_heading, m_distance]])
         x, P = kalman_prediction(x, P, Z)
         
         heading = x.value[0][0]
         distance = x.value[1][0]
-        print "heading: ", heading
-        print "distance: ", distance
-
 
         new_x = distance * cos(heading)
         new_y = distance * sin(heading)
         xy_estimate = [measurement[0] + new_x, measurement[1] + new_y]
-        OTHER = {'x': x, 'P': P, 'prev': measurement} 
+        OTHER.update({'x': x, 'P': P, 'prev': measurement})
     else:
         xy_estimate = measurement
         OTHER = {'prev': measurement} 
@@ -100,7 +94,15 @@ def next_move(hunter_position, hunter_heading, target_measurement, max_distance,
     # must be as follows in order to be graded properly.
     
     xy_estimate, OTHER = estimate_target_position(target_measurement, OTHER)
-    turning, distance = turning_and_distance_to_target_position(xy_estimate, hunter_position, hunter_heading, max_distance)
+
+    if distance_between(hunter_position, xy_estimate) > max_distance:
+        OTHER_CLONE = copy.deepcopy(OTHER)
+        for i in range(2):
+            xy_estimate, OTHER_CLONE = estimate_target_position(xy_estimate, OTHER_CLONE)
+            turning, distance = turning_and_distance_to_target_position(xy_estimate, hunter_position, hunter_heading, max_distance)
+    else:
+        turning, distance = turning_and_distance_to_target_position(xy_estimate, hunter_position, hunter_heading, max_distance)
+
     
     return turning, distance, OTHER
 
@@ -152,9 +154,6 @@ def demo_grading(hunter_bot, target_bot, next_move_fcn, OTHER = None):
     #End of Visualization
     # We will use your next_move_fcn until we catch the target or time expires.
     while not caught and ctr < 1000:
-
-        if ctr > 60:
-            time.sleep(5)
         # Check to see if the hunter has caught the target.
         hunter_position = (hunter_bot.x, hunter_bot.y)
         target_position = (target_bot.x, target_bot.y)
@@ -246,10 +245,4 @@ I =  matrix([[1,0,0,0],[0,1,0,0],[0,0,1,0],[0,0,0,1]])# 4d identity matrix
 
 u = matrix([[0.], [0.], [0.], [0.]]) # external motion
 
-
 print demo_grading(hunter, target, next_move)
-
-
-
-
-
